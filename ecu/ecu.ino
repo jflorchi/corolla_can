@@ -58,6 +58,10 @@ void setup() {
 
 }
 
+void onMsg(int packetSize) {
+
+}
+
 void loop() {
 
     //______________READING BUTTONS AND SWITCHES
@@ -90,11 +94,28 @@ void loop() {
     lastbuttonstate3 = buttonstate3;
     lastbuttonstate4 = buttonstate4;
 
+    // reading can messages
+
+    
+
+    long id = CAN.packetId();
+    //what happens if I don't read all of the bytes??
+    // may have to run a while loop to clear un needed buffers based on length
+    //uint8_t readByte = CAN.read();
+ 
+    if (id == 0x399) { // read PCM_CRUISE_SM for if cruise control is enabled or not
+        
+    } else if (id == 0xb0) {
+        
+    } else if (id == 0xb2) {
+        
+    }
+
     //______________SENDING_CAN_MESSAGES
 
     //0x1d2 msg PCM_CRUISE
     uint8_t dat[8];
-    dat[0] = (OP_ON << 5) & 0x20 | (!gas_pedal_state << 4) & 0x10;
+    dat[0] = (OP_ON << 5) & 0x20 | (!gas_pedal_state << 4) & 0x10; // tie this into PCM_CRUISE_SM for openpilot on
     dat[1] = 0x0;
     dat[2] = 0x0;
     dat[3] = 0x0;
@@ -111,7 +132,7 @@ void loop() {
     //0x1d3 msg PCM_CRUISE_2
     uint8_t dat2[8];
     dat2[0] = 0x0;
-    dat2[1] = (OP_ON << 7) & 0x80 | 0x28;
+    dat2[1] = (OP_ON << 7) & 0x80 | 0x28; // need to tie this into cruise control PCM_CRUISE_SM for openpilot on
     dat2[2] = set_speed;
     dat2[3] = 0x0;
     dat2[4] = 0x0;
@@ -124,6 +145,7 @@ void loop() {
     }
     CAN.endPacket();
 
+    // pull from 0:b2 and 0:b0 which has the front and rear wheel speeds
     //0xaa msg defaults 1a 6f WHEEL_SPEEDS
     uint8_t dat3[8];
     uint16_t wheelspeed = 0x1a6f + (average * 100);
@@ -141,38 +163,6 @@ void loop() {
     }
     CAN.endPacket();
 
-    //0x3b7 msg ESP_CONTROL
-    uint8_t dat5[8];
-    dat5[0] = 0x0;
-    dat5[1] = 0x0;
-    dat5[2] = 0x0;
-    dat5[3] = 0x0;
-    dat5[4] = 0x0;
-    dat5[5] = 0x0;
-    dat5[6] = 0x0;
-    dat5[7] = 0x08;
-    CAN.beginPacket(0x3b7);
-    for (int ii = 0; ii < 8; ii++) {
-        CAN.write(dat5[ii]);
-    }
-    CAN.endPacket();
-
-    //0x620 msg STEATS_DOORS
-    uint8_t dat6[8];
-    dat6[0] = 0x10;
-    dat6[1] = 0x0;
-    dat6[2] = 0x0;
-    dat6[3] = 0x1d;
-    dat6[4] = 0xb0;
-    dat6[5] = 0x40;
-    dat6[6] = 0x0;
-    dat6[7] = 0x0;
-    CAN.beginPacket(0x620);
-    for (int ii = 0; ii < 8; ii++) {
-        CAN.write(dat6[ii]);
-    }
-    CAN.endPacket();
-
     // 0x3bc msg GEAR_PACKET
     uint8_t dat7[8];
     dat7[0] = 0x0;
@@ -186,38 +176,6 @@ void loop() {
     CAN.beginPacket(0x3bc);
     for (int ii = 0; ii < 8; ii++) {
         CAN.write(dat7[ii]);
-    }
-    CAN.endPacket();
-
-    // 0x2c1 msg GAS_PEDAL
-    uint8_t dat10[8];
-    dat10[0] = (!gas_pedal_state << 3) & 0x08;
-    dat10[1] = 0x0;
-    dat10[2] = 0x0;
-    dat10[3] = 0x0;
-    dat10[4] = 0x0;
-    dat10[5] = 0x0;
-    dat10[6] = 0x0;
-    dat10[7] = 0x0;
-    CAN.beginPacket(0x2c1);
-    for (int ii = 0; ii < 8; ii++) {
-        CAN.write(dat10[ii]);
-    }
-    CAN.endPacket();
-
-    //0x224 msg fake brake module
-    uint8_t dat11[8];
-    dat11[0] = 0x0;
-    dat11[1] = 0x0;
-    dat11[2] = 0x0;
-    dat11[3] = 0x0;
-    dat11[4] = 0x0;
-    dat11[5] = 0x0;
-    dat11[6] = 0x0;
-    dat11[7] = 0x8;
-    CAN.beginPacket(0x224);
-    for (int ii = 0; ii < 8; ii++) {
-        CAN.write(dat11[ii]);
     }
     CAN.endPacket();
 
