@@ -25,7 +25,7 @@ double average = 0;
 boolean blinker_left = true;
 boolean blinker_right = true;
 
-// wheel speeds
+// wheel speeds - front right 1 front right 2 etc... each wheel speed is 2 bytes
 short fr1 = -1, fr2 = -1, fl1 = -1, fl2 = -1, br1 = -1, br2 = -1, bl1 = -1, bl2 = -1;
 
 void setup() {
@@ -71,14 +71,7 @@ void loop() {
     lastbuttonstate3 = buttonstate3;
     lastbuttonstate4 = buttonstate4;
 
-    // reading can messages
-
-    
-
     long id = CAN.packetId();
-    //what happens if I don't read all of the bytes??
-    // may have to run a while loop to clear un needed buffers based on length
-    //uint8_t readByte = CAN.read();
     
     if (id == 0x399) { // read PCM_CRUISE_SM for if cruise control is enabled or not
         uint8_t byte1 = CAN.read();
@@ -191,24 +184,6 @@ void loop() {
     CAN.beginPacket(0x1d3);
     for (int ii = 0; ii < 8; ii++) {
         CAN.write(dat2[ii]);
-    }
-    CAN.endPacket();
-
-    // pull from 0:b2 and 0:b0 which has the front and rear wheel speeds
-    //0xaa msg defaults 1a 6f WHEEL_SPEEDS
-    uint8_t dat3[8];
-    uint16_t wheelspeed = 0x1a6f + (average * 100);
-    dat3[0] = (wheelspeed >> 8) & 0xFF;
-    dat3[1] = (wheelspeed >> 0) & 0xFF;
-    dat3[2] = (wheelspeed >> 8) & 0xFF;
-    dat3[3] = (wheelspeed >> 0) & 0xFF;
-    dat3[4] = (wheelspeed >> 8) & 0xFF;
-    dat3[5] = (wheelspeed >> 0) & 0xFF;
-    dat3[6] = (wheelspeed >> 8) & 0xFF;
-    dat3[7] = (wheelspeed >> 0) & 0xFF;
-    CAN.beginPacket(0xaa);
-    for (int ii = 0; ii < 8; ii++) {
-        CAN.write(dat3[ii]);
     }
     CAN.endPacket();
 
