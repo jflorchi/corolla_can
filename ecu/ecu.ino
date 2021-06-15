@@ -27,11 +27,11 @@ boolean blinker_right = true;
 
 // wheel speeds - front right 1 front right 2 etc... each wheel speed is 2 bytes
 short fr1 = -1, fr2 = -1, fl1 = -1, fl2 = -1, br1 = -1, br2 = -1, bl1 = -1, bl2 = -1;
+uint8_t lkasCounter = 0;
 
 void setup() {
 
     CAN.begin(500E3);
-
     pinMode(button1, INPUT);
     pinMode(button2, INPUT);
     pinMode(button3, INPUT);
@@ -65,6 +65,8 @@ void loop() {
     if (buttonstate1 != lastbuttonstate1 && buttonstate1 == LOW) {
         set_speed += 5;
     }
+
+
 
     lastbuttonstate1 = buttonstate1;
     lastbuttonstate2 = buttonstate2;
@@ -154,6 +156,25 @@ void loop() {
     }
 
     //______________SENDING_CAN_MESSAGES
+
+
+    // just to test if OpenPilot will acknowledge the car as a 2017
+    //0x2e4 STERING_LKAS
+    uint8_t lkasDat[8];
+    uint8_t val = 0;
+    val = val |= 1UL << 0; // set first bit to zero
+    val = (val & ~0x7F) | (lkasCounter * 0x7F); // set interal 6 bits to counter value
+    lkasDat[0] = val;
+    lkasDat[1] = 0x0;
+    lkasDat[2] = 0x0;
+    lkasDat[3] = 0x0;
+    lkasDat[4] = can_cksum(lkasDat, 4, 0x2e4);
+    CAN.beginPacket(0x2e4);
+    for (uint8_t i = 0; i < 5; i++) {
+        CAN.write(lkasDat[i]);
+    }
+    CAN.endPacket();
+    lkasCounter = (lkasCounter + 1) % 64;
 
     //0x1d2 msg PCM_CRUISE
     uint8_t dat[8];
