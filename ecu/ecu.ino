@@ -25,15 +25,6 @@ double average = 0;
 boolean blinker_left = true;
 boolean blinker_right = true;
 
-//______________FOR READING VSS SENSOR
-const byte interruptPin = 3;
-int inc = 0;
-int half_revolutions = 0;
-int spd;
-unsigned long lastmillis;
-unsigned long duration;
-uint8_t encoder = 0;
-
 // wheel speeds
 short fr1 = -1, fr2 = -1, fl1 = -1, fl2 = -1, br1 = -1, br2 = -1, bl1 = -1, bl2 = -1;
 
@@ -41,8 +32,6 @@ void setup() {
 
     CAN.begin(500E3);
 
-    pinMode(interruptPin, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(interruptPin), rpm, FALLING);
     pinMode(button1, INPUT);
     pinMode(button2, INPUT);
     pinMode(button3, INPUT);
@@ -254,14 +243,6 @@ void loop() {
         CAN.write(dat614[ii]);
     }
     CAN.endPacket();
-}
-
-void rpm() {
-    half_revolutions++;
-    if (encoder > 255) {
-        encoder = 0;
-    }
-    encoder++;
 }
 
 int can_cksum(uint8_t *dat, uint8_t len, uint16_t addr) {
