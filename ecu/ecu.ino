@@ -25,12 +25,6 @@ double average = 0;
 boolean blinker_left = true;
 boolean blinker_right = true;
 
-//______________FOR SMOOTHING SPD
-const int numReadings = 160;
-float readings[numReadings];
-int readIndex = 0;
-double total = 0;
-
 //______________FOR READING VSS SENSOR
 const byte interruptPin = 3;
 int inc = 0;
@@ -39,6 +33,9 @@ int spd;
 unsigned long lastmillis;
 unsigned long duration;
 uint8_t encoder = 0;
+
+// wheel speeds
+short fr1 = -1, fr2 = -1, fl1 = -1, fl2 = -1, br1 = -1, br2 = -1, bl1 = -1, bl2 = -1;
 
 void setup() {
 
@@ -50,15 +47,6 @@ void setup() {
     pinMode(button2, INPUT);
     pinMode(button3, INPUT);
     pinMode(button4, INPUT);
-
-    //______________initialize smoothing inputs
-    for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-        readings[thisReading] = 0;
-    }
-
-}
-
-void onMsg(int packetSize) {
 
 }
 
@@ -102,13 +90,85 @@ void loop() {
     //what happens if I don't read all of the bytes??
     // may have to run a while loop to clear un needed buffers based on length
     //uint8_t readByte = CAN.read();
- 
+    
     if (id == 0x399) { // read PCM_CRUISE_SM for if cruise control is enabled or not
-        
-    } else if (id == 0xb0) {
-        
-    } else if (id == 0xb2) {
-        
+        uint8_t byte1 = CAN.read();
+        uint8_t byte2 = CAN.read();
+        uint8_t cruiseEnabled = (byte2 & 0x2);
+        OP_ON = cruiseEnabled == 1;        
+    }
+
+    if (id == 0xb0) {
+        uint8_t ffr1 = CAN.read();
+        uint8_t ffr2 = CAN.read();
+        uint8_t ffl1 = CAN.read();
+        uint8_t ffl2 = CAN.read();
+        if (br1 != -1) {
+            uint8_t dat[8];
+            dat[0] = ffr1;
+            dat[1] = ffr2;
+            dat[2] = ffl1;
+            dat[3] = ffl2;
+            dat[4] = br1;
+            dat[5] = br2;
+            dat[6] = bl1;
+            dat[7] = bl2;
+            CAN.beginPacket(0xaa);
+            for (uint8_t i = 0; i < 8; i++) {
+                CAN.write(dat[i]);
+            }
+            CAN.endPacket();
+            br1 = -1;
+            br2 = -1;
+            bl1 = -1;
+            bl2 = -1;    
+        } else {
+            fr1 = ffr1;
+            fr2 = ffr2;
+            fl1 = ffl1;
+            fl2 = ffl2;
+        }
+        for (uint8_t i = 0; i < 4; i++) {
+            CAN.read();
+        }
+        id = CAN.packetId();
+    }
+
+    if (id == 0xb2) {
+        // Read wheel speeds from CAN, the first 4 bytes are wheel speeds
+        uint8_t bbr1 = CAN.read();
+        uint8_t bbr2 = CAN.read();
+        uint8_t bbl1 = CAN.read();
+        uint8_t bbl2 = CAN.read();
+        if (fr1 != -1) {
+            uint8_t dat[8];
+            dat[0] = fr1;
+            dat[1] = fr2;
+            dat[2] = fl1;
+            dat[3] = fl2;
+            dat[4] = bbr1;
+            dat[5] = bbr2;
+            dat[6] = bbl1;
+            dat[7] = bbl2;
+            // Write Packet
+            CAN.beginPacket(0xaa);
+            for (uint8_t i = 0; i < 8; i++) {
+                CAN.write(dat[i]);
+            }
+            CAN.endPacket();
+            br1 = -1;
+            br2 = -1;
+            bl1 = -1;
+            bl2 = -1;    
+        } else {
+            br1 = bbr1;
+            br2 = bbr2;
+            bl1 = bbl1;
+            bl2 = bbl2;
+        }
+        for (uint8_t i = 0; i < 4; i++) {
+            CAN.read();
+        }
     }
 
     //______________SENDING_CAN_MESSAGES
