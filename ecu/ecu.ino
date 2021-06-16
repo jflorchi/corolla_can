@@ -6,7 +6,6 @@ int button3 = 7;
 int button2 = 6;
 int button1 = 9;
 int pedal = A4;
-boolean pedalstate = false;
 int buttonstate4;
 int lastbuttonstate4;
 int buttonstate3;
@@ -42,7 +41,6 @@ void setup() {
 void loop() {
 
     //______________READING BUTTONS AND SWITCHES
-    pedalstate = digitalRead(pedal);
     buttonstate4 = digitalRead(button4);
     buttonstate3 = digitalRead(button3);
     buttonstate2 = digitalRead(button2);
@@ -66,12 +64,13 @@ void loop() {
         set_speed += 5;
     }
 
-
-
     lastbuttonstate1 = buttonstate1;
     lastbuttonstate2 = buttonstate2;
     lastbuttonstate3 = buttonstate3;
     lastbuttonstate4 = buttonstate4;
+
+
+    // TODO: read steering wheel angle over time and compute degrees per second
 
     long id = CAN.packetId();
     
