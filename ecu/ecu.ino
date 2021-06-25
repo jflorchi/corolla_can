@@ -55,11 +55,11 @@ void loop() {
     // TODO: get actual values
     if (quadState >= 1 && quadState <= 1) {  // volume +
 
-    } else if (quadState >= 1 && quadstate <= 1) {  // volume -
+    } else if (quadState >= 1 && quadState <= 1) {  // volume -
 
-    } else if (quadState >= 1 && quadstate <= 1) {  // seek +
+    } else if (quadState >= 1 && quadState <= 1) {  // seek +
 
-    } else if (quadState >= 1 && quadstate <= 1) {  // seek -
+    } else if (quadState >= 1 && quadState <= 1) {  // seek -
     
     }
 
