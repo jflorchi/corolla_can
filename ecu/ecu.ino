@@ -34,43 +34,62 @@ void setup() {
     Serial.println("init");
 
     CAN.begin(500E3);
-    pinMode(button1, INPUT);
-    pinMode(button2, INPUT);
-    pinMode(button3, INPUT);
-    pinMode(button4, INPUT);
+    pinMode(7, INPUT);
+    pinMode(8, INPUT);
 
 }
 
 void loop() {
 
-    //______________READING BUTTONS AND SWITCHES
-    buttonstate4 = digitalRead(button4);
-    buttonstate3 = digitalRead(button3);
-    buttonstate2 = digitalRead(button2);
-    buttonstate1 = digitalRead(button1);
+    int modeState = analogRead(A0);
+    int quadState = analogRead(A1);
 
-    if (buttonstate4 != lastbuttonstate4) {
-        if (buttonstate4 == LOW) {
-            if (OP_ON == true) {
-                OP_ON = false;
-            } else if (OP_ON == false) {
-                OP_ON = true;
-                set_speed = (average += 3);
-            }
+    if (modeState > 2.5) {
+        if (OP_ON) {
+            OP_ON = false;
+        } else {
+            OP_ON = true;
         }
     }
 
-    blinker_right = buttonstate3 == LOW;
-    blinker_left = buttonstate2 == LOW;
+    // TODO: get actual values
+    if (quadState >= 1 && quadState <= 1) {  // volume +
 
-    if (buttonstate1 != lastbuttonstate1 && buttonstate1 == LOW) {
-        set_speed += 5;
+    } else if (quadState >= 1 && quadstate <= 1) {  // volume -
+
+    } else if (quadState >= 1 && quadstate <= 1) {  // seek +
+
+    } else if (quadState >= 1 && quadstate <= 1) {  // seek -
+    
     }
 
-    lastbuttonstate1 = buttonstate1;
-    lastbuttonstate2 = buttonstate2;
-    lastbuttonstate3 = buttonstate3;
-    lastbuttonstate4 = buttonstate4;
+//    buttonstate4 = digitalRead(button4);
+//    buttonstate3 = digitalRead(button3);
+//    buttonstate2 = digitalRead(button2);
+//    buttonstate1 = digitalRead(button1);
+//
+//    if (buttonstate4 != lastbuttonstate4) {
+//        if (buttonstate4 == LOW) {
+//            if (OP_ON == true) {
+//                OP_ON = false;
+//            } else if (OP_ON == false) {
+//                OP_ON = true;
+//                set_speed = (average += 3);
+//            }
+//        }
+//    }
+//
+//    blinker_right = buttonstate3 == LOW;
+//    blinker_left = buttonstate2 == LOW;
+//
+//    if (buttonstate1 != lastbuttonstate1 && buttonstate1 == LOW) {
+//        set_speed += 5;
+//    }
+//
+//    lastbuttonstate1 = buttonstate1;
+//    lastbuttonstate2 = buttonstate2;
+//    lastbuttonstate3 = buttonstate3;
+//    lastbuttonstate4 = buttonstate4;
 
 
     // TODO: read steering wheel angle over time and compute degrees per second
