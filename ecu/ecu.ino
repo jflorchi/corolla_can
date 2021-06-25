@@ -30,6 +30,9 @@ uint8_t lkasCounter = 0;
 
 void setup() {
 
+    Serial.begin(9600);
+    Serial.println("init");
+
     CAN.begin(500E3);
     pinMode(button1, INPUT);
     pinMode(button2, INPUT);
@@ -78,7 +81,8 @@ void loop() {
         uint8_t byte1 = CAN.read();
         uint8_t byte2 = CAN.read();
         uint8_t cruiseEnabled = (byte2 & 0x2);
-        OP_ON = cruiseEnabled == 1;        
+        OP_ON = cruiseEnabled == 1;
+        Serial.println("READ PCM_CRUISE_SM Cruise Enabled : " + OP_ON);       
     }
 
     if (id == 0xb0) {
@@ -158,6 +162,27 @@ void loop() {
 
 
     // just to test if OpenPilot will acknowledge the car as a 2017
+
+    //0x2e6 LEAD_INFO
+    /*
+        ff f8 00 08 7f e0 00 4e
+    */
+    uint8_t leadDat[8];
+    leadDat[0] = 0xff;
+    leadDat[1] = 0xf8;
+    leadDat[2] = 0x00;
+    leadDat[3] = 0x08;
+    leadDat[4] = 0x7f;
+    leadDat[5] = 0xe0;
+    leadDat[6] = 0x00;
+    leadDat[7] = 0x4e;
+    CAN.beginPacket(0x2e6);
+    for (uint8_t i = 0; i < 8; i++) {
+        CAN.write(leadDat[i]);
+    }
+    CAN.endPacket();
+
+
     //0x2e4 STERING_LKAS
     uint8_t lkasDat[8];
     uint8_t val = 0;
