@@ -87,7 +87,7 @@ void onReceive(uint8_t packetSize) {
     }
 }
 
-bool writeMsg(uint8_t id, uint8_t msg[], bool checksum) {
+bool writeMsg(uint8_t id, uint8_t *msg, bool checksum) {
     CAN.beginPacket(id);
     if (checksum) {
         attachChecksum(id, msg);
@@ -102,7 +102,7 @@ bool writeMsg(uint8_t id, uint8_t msg[], bool checksum) {
     Leave the last byte of the array empty, then call this to
     fill the last byte with the checksum of the rest
 */
-void attachChecksum(uint8_t id, uint8_t msg[]) {
+void attachChecksum(uint8_t id, uint8_t *msg) {
     can_cksum(msg, sizeof(msg) - 1, id);
 }
 
@@ -115,6 +115,9 @@ int can_cksum(uint8_t *dat, uint8_t len, uint16_t addr) {
     return checksum;
 }
 
+bool lastState = false;
+bool stateChanged = false;
+
 void setup() {
     Serial.begin(9600);
     Serial.println("init");
@@ -122,29 +125,32 @@ void setup() {
     CAN.setPins(9, 2);
     CAN.onReceive(onReceive);
     CAN.begin(500E3);
+
+    pinMode(8, INPUT_PULLUP);
 }
 
 void loop() {
 
 //  Media Button Handling
-//    int modeState = analogRead(A0);
-//    int quadState = analogRead(A1);
-//    if (modeState > 2.5) {
-//        if (OP_ON) {
-//            OP_ON = false;
-//        } else {
-//            OP_ON = true;
-//        }
-//    }
-//    if (quadState >= 1 && quadState <= 1) {  // volume +
-//        
-//    } else if (quadState >= 1 && quadState <= 1) {  // volume -
-//
-//    } else if (quadState >= 1 && quadState <= 1) {  // seek +
-//    
-//    } else if (quadState >= 1 && quadState <= 1) {  // seek -
-//        
-//    }
+    bool buttonPressed = digitalRead(8) == 0;
+    if (buttonPressed) {
+        if (lastState != buttonPressed) {
+            if (!stateChanged) {
+                if (OP_ON) {
+                    OP_ON = false;
+                } else {
+                    OP_ON = true;
+                }
+            }
+            stateChanged = true;
+        } else {
+            stateChanged = false;
+        }
+    }
+    lastState = buttonPressed;
+
+    // Optimization: can pre-create arrays with values that don't change
+    //                  then just set the values that do change
 
     //0x2e6 LEAD_INFO
     writeMsg(0x2e6, LEAD_INFO_MSG, false);
@@ -173,4 +179,3 @@ void loop() {
 
     delay(8);
 }
-
