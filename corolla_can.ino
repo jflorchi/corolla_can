@@ -139,7 +139,11 @@ void loop() {
     writeMsg(0x2e6, LEAD_INFO_MSG, 8, false);
 
     //0x2e4 STERING_LKAS
-    LKAS_MSG[0] = ((LKAS_MSG[0] |= 1UL << 0) & ~0x7F) | (lkasCounter * 0x7F);
+    uint8_t request = 0;
+    short cmd = 0;
+    LKAS_MSG[0] = 0x80 | (lkasCounter << 1 & 0x7e) | (request & 0x1);
+    LKAS_MSG[1] = cmd >> 8 & 0xFF;
+    LKAS_MSG[2] = cmd & 0xFF;
     writeMsg(0x2e4, LKAS_MSG, 5, true);
     lkasCounter = (lkasCounter + 1) % 64;
 
