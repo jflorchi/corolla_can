@@ -133,11 +133,7 @@ void loop() {
     if (buttonPressed) {
         if (lastState != buttonPressed) {
             if (!stateChanged) {
-                if (openEnabled) {
-                    openEnabled = false;
-                } else {
-                    openEnabled = true;
-                }
+                openEnabled = !openEnabled;
             }
             stateChanged = true;
         } else {
