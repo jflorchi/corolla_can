@@ -146,9 +146,6 @@ void loop() {
     }
     lastState = buttonPressed;
 
-    // Optimization: can pre-create arrays with values that don't change
-    //                  then just set the values that do change
-
     //0x2e6 LEAD_INFO
     writeMsg(0x2e6, LEAD_INFO_MSG, false);
 
