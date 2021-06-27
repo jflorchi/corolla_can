@@ -46,20 +46,13 @@ void onReceive(uint8_t packetSize) {
             dat[5] = br2;
             dat[6] = bl1;
             dat[7] = bl2;
-            CAN.beginPacket(0xaa);
-            for (uint8_t i = 0; i < 8; i++) {
-                CAN.write(dat[i]);
-            }
-            CAN.endPacket();
+            writeMsg(0xaa, dat, false);
             br1 = br2 = bl1 = bl2 = -1;
         } else {
             fr1 = ffr1;
             fr2 = ffr2;
             fl1 = ffl1;
             fl2 = ffl2;
-        }
-        for (uint8_t i = 0; i < 4; i++) {
-            CAN.read();
         }
     } else if (id == 0xb2) {
         uint8_t bbr1 = CAN.read();
@@ -76,21 +69,13 @@ void onReceive(uint8_t packetSize) {
             dat[5] = bbr2;
             dat[6] = bbl1;
             dat[7] = bbl2;
-            // Write Packet
-            CAN.beginPacket(0xaa);
-            for (uint8_t i = 0; i < 8; i++) {
-                CAN.write(dat[i]);
-            }
-            CAN.endPacket();
+            writeMsg(0xaa, dat, false);
             br1 = br2 = bl1 = bl2 = -1;
         } else {
             br1 = bbr1;
             br2 = bbr2;
             bl1 = bbl1;
             bl2 = bbl2;
-        }
-        for (uint8_t i = 0; i < 4; i++) {
-            CAN.read();
         }
     }
 }
