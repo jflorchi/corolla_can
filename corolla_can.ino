@@ -2,7 +2,7 @@
 
 // State variables
 boolean openEnabled = false;
-uint8_t setSpeed = 0x0;
+uint16_t setSpeed = 0x0;
 boolean blinker_left = false;
 boolean blinker_right = false;
 
@@ -11,7 +11,6 @@ bool lastState = false;
 bool stateChanged = false;
 
 // Wheel speeds
-short fr1 = -1, fr2 = -1, fl1 = -1, fl2 = -1, br1 = -1, br2 = -1, bl1 = -1, bl2 = -1;
 uint8_t lkasCounter = 0;
 
 // Const Messages
@@ -26,6 +25,8 @@ uint8_t PCM_CRUISE_MSG[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 uint8_t PCM_CRUISE_2_MSG[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 uint8_t STEERING_LEVER_MSG[8] = {0x29, 0x0, 0x01, 0x0, 0x0, 0x0, 0x76};
 
+uint8_t WHEEL_SPEEDS[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
+
 /**
     #onReceive
     Processes CAN messages that are needed for translation
@@ -35,43 +36,22 @@ void recv(uint8_t packetSize) {
     
     if (id == 0xb0) {
         uint8_t dat[8];
-        dat[0] = CAN.read();
-        dat[1] = CAN.read();
-        dat[2] = CAN.read();
-        dat[3] = CAN.read();
-        if (br1 != -1) {
-            uint8_t dat[8];
-            dat[4] = br1;
-            dat[5] = br2;
-            dat[6] = bl1;
-            dat[7] = bl2;
-            writeMsg(0xaa, dat, 8, false);
-            br1 = br2 = bl1 = bl2 = -1;
-        } else {
-            fr1 = dat[0];
-            fr2 = dat[1];
-            fl1 = dat[2];
-            fl2 = dat[3];
-        }
+        WHEEL_SPEEDS[0] = CAN.read() + 0x1a;
+        WHEEL_SPEEDS[1] = CAN.read() + 0x6f;
+        WHEEL_SPEEDS[2] = CAN.read() + 0x1a;
+        WHEEL_SPEEDS[3] = CAN.read() + 0x6f;
     } else if (id == 0xb2) {
-        uint8_t dat[8];
-        dat[4] = CAN.read();
-        dat[5] = CAN.read();
-        dat[6] = CAN.read();
-        dat[7] = CAN.read();
-        if (fr1 != -1) {
-            dat[0] = fr1;
-            dat[1] = fr2;
-            dat[2] = fl1;
-            dat[3] = fl2;
-            writeMsg(0xaa, dat, 8, false);
-            br1 = br2 = bl1 = bl2 = -1;
-        } else {
-            br1 = dat[4];
-            br2 = dat[5];
-            bl1 = dat[6];
-            bl2 = dat[7];
+        WHEEL_SPEEDS[4] = CAN.read() + 0x1a;
+        WHEEL_SPEEDS[5] = CAN.read() + 0x6f;
+        WHEEL_SPEEDS[6] = CAN.read() + 0x1a;
+        WHEEL_SPEEDS[7] = CAN.read() + 0x6f;
+    } else if (id == 0xb4 && openEnabled) {
+        for (uint8_t i = 0; i < 5; i++) {
+            CAN.read();
         }
+        uint8_t d1 = CAN.read();
+        uint8_t d2 = CAN.read();
+        setSpeed = ((uint16_t) d2 << 8) | d1;
     }
 }
 
@@ -139,9 +119,9 @@ void loop() {
 
     //0x2e6 LEAD_INFO
     writeMsg(0x2e6, LEAD_INFO_MSG, 8, false);
-
-    writeMsg(0x283, PRE_COL, 7, false);
-    writeMsg(0x344, PRE_COL_2, 8, false);    
+    
+    //0xaa WHEEL_SPEED
+    writeMsg(0xaa, WHEEL_SPEEDS, 8, false);
 
     //0x2e4 STERING_LKAS
     uint8_t request = 0;
