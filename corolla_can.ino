@@ -45,13 +45,17 @@ void recv(uint8_t packetSize) {
         WHEEL_SPEEDS[5] = CAN.read() + 0x6f;
         WHEEL_SPEEDS[6] = CAN.read() + 0x1a;
         WHEEL_SPEEDS[7] = CAN.read() + 0x6f;
-    } else if (id == 0xb4 && openEnabled) {
-        for (uint8_t i = 0; i < 5; i++) {
-            CAN.read();
+    } else if (id == 0xb4) {
+        if (openEnabled) {
+            setSpeed = 0;
+        } else {
+            for (uint8_t i = 0; i < 5; i++) {
+                CAN.read();
+            }
+            uint8_t d1 = CAN.read();
+            uint8_t d2 = CAN.read();
+            setSpeed = ((uint16_t) d1 << 8) | d2;
         }
-        uint8_t d1 = CAN.read();
-        uint8_t d2 = CAN.read();
-        setSpeed = ((uint16_t) d2 << 8) | d1;
     }
 }
 
