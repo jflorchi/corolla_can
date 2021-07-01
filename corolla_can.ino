@@ -27,6 +27,14 @@ uint8_t STEERING_LEVER_MSG[8] = {0x29, 0x0, 0x01, 0x0, 0x0, 0x0, 0x76};
 
 uint8_t WHEEL_SPEEDS[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 
+uint16_t getAvgWheelSpeed() {
+    uint16_t w1 = 256U * (WHEEL_SPEEDS[0] - 0x1a) + (WHEEL_SPEEDS[1] - 0x6f);
+    uint16_t w2 = 256U * (WHEEL_SPEEDS[2] - 0x1a) + (WHEEL_SPEEDS[3] - 0x6f);
+    uint16_t w3 = 256U * (WHEEL_SPEEDS[4] - 0x1a) + (WHEEL_SPEEDS[6] - 0x6f);
+    uint16_t w4 = 256U * (WHEEL_SPEEDS[6] - 0x1a) + (WHEEL_SPEEDS[7] - 0x6f);
+    return (w1 + w2 + w3 + w4) / 4;
+}
+
 /**
     #onReceive
     Processes CAN messages that are needed for translation
@@ -47,14 +55,14 @@ void recv(uint8_t packetSize) {
         WHEEL_SPEEDS[7] = CAN.read() + 0x6f;
     } else if (id == 0xb4) {
         if (openEnabled) {
-            setSpeed = 0;
-        } else {
             for (uint8_t i = 0; i < 5; i++) {
                 CAN.read();
             }
             uint8_t d1 = CAN.read();
             uint8_t d2 = CAN.read();
             setSpeed = ((uint16_t) d1 << 8) | d2;
+        } else {
+            setSpeed = 0;
         }
     }
 }
@@ -120,6 +128,8 @@ void loop() {
         }
     }
     lastState = buttonPressed;
+
+    setSpeed = (openEnabled) ? getAvgWheelSpeed() : 0;
 
     //0x2e6 LEAD_INFO
     writeMsg(0x2e6, LEAD_INFO_MSG, 8, false);
