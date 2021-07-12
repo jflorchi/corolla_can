@@ -10,30 +10,21 @@ boolean blinker_right = false;
 bool lastState = false;
 bool stateChanged = false;
 
-// Wheel speeds
-uint8_t lkasCounter = 0;
-
 // Const Messages
 const uint8_t LEAD_INFO_MSG[8] = {0xff, 0xf8, 0x00, 0x08, 0x7f, 0xe0, 0x00, 0x4e};
-const uint8_t GEAR_MSG[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x80, 0x0, 0x0};
+const uint8_t GEAR_MSG[8] = {0x0, 0x1, 0x0, 0x0, 0x0, 0x80, 0x0, 0x0};
 const uint8_t PRE_COL[7] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8c};
 const uint8_t PRE_COL_2[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x4f};
+const uint8_t BRAKE_MOD[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8};
+const uint8_t STEER_ANGLE[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
+const uint8_t CAMERA[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 
 // Variable Messasges
-uint8_t LKAS_MSG[5] = {0x0, 0x0, 0x0, 0x0, 0x0};
 uint8_t PCM_CRUISE_MSG[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 uint8_t PCM_CRUISE_2_MSG[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 uint8_t STEERING_LEVER_MSG[8] = {0x29, 0x0, 0x01, 0x0, 0x0, 0x0, 0x76};
 
 uint8_t WHEEL_SPEEDS[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
-
-uint16_t getAvgWheelSpeed() {
-    uint16_t w1 = 256U * (WHEEL_SPEEDS[0] - 0x1a) + (WHEEL_SPEEDS[1] - 0x6f);
-    uint16_t w2 = 256U * (WHEEL_SPEEDS[2] - 0x1a) + (WHEEL_SPEEDS[3] - 0x6f);
-    uint16_t w3 = 256U * (WHEEL_SPEEDS[4] - 0x1a) + (WHEEL_SPEEDS[6] - 0x6f);
-    uint16_t w4 = 256U * (WHEEL_SPEEDS[6] - 0x1a) + (WHEEL_SPEEDS[7] - 0x6f);
-    return (w1 + w2 + w3 + w4) / 4;
-}
 
 /**
     #onReceive
@@ -41,7 +32,6 @@ uint16_t getAvgWheelSpeed() {
 */
 void recv(uint8_t packetSize) {
     long id = CAN.packetId();
-    
     if (id == 0xb0) {
         uint8_t dat[8];
         WHEEL_SPEEDS[0] = CAN.read() + 0x1a;
@@ -53,17 +43,9 @@ void recv(uint8_t packetSize) {
         WHEEL_SPEEDS[5] = CAN.read() + 0x6f;
         WHEEL_SPEEDS[6] = CAN.read() + 0x1a;
         WHEEL_SPEEDS[7] = CAN.read() + 0x6f;
-    } else if (id == 0xb4) {
-        if (openEnabled) {
-            for (uint8_t i = 0; i < 5; i++) {
-                CAN.read();
-            }
-            uint8_t d1 = CAN.read();
-            uint8_t d2 = CAN.read();
-            setSpeed = ((uint16_t) d1 << 8) | d2;
-        } else {
-            setSpeed = 0;
-        }
+    } else if (id == 0x399) {
+        CAN.read();
+        openEnabled = (CAN.read() & 0x2) == 2;
     }
 }
 
@@ -116,35 +98,24 @@ void setup() {
 void loop() {
 
     // Media Button Handling
-    bool buttonPressed = digitalRead(8) == 0;
-    if (buttonPressed) {
-        if (lastState != buttonPressed) {
-            if (!stateChanged) {
-                openEnabled = !openEnabled;
-            }
-            stateChanged = true;
-        } else {
-            stateChanged = false;
-        }
-    }
-    lastState = buttonPressed;
-
-    setSpeed = (openEnabled) ? getAvgWheelSpeed() : 0;
+//    bool buttonPressed = digitalRead(8) == 0;
+//    if (buttonPressed) {
+//        if (lastState != buttonPressed) {
+//            if (!stateChanged) {
+//                openEnabled = !openEnabled;
+//            }
+//            stateChanged = true;
+//        } else {
+//            stateChanged = false;
+//        }
+//    }
+//    lastState = buttonPressed;
 
     //0x2e6 LEAD_INFO
     writeMsg(0x2e6, LEAD_INFO_MSG, 8, false);
     
     //0xaa WHEEL_SPEED
     writeMsg(0xaa, WHEEL_SPEEDS, 8, false);
-
-    //0x2e4 STERING_LKAS
-    uint8_t request = 0;
-    short cmd = 0;
-    LKAS_MSG[0] = 0x80 | (lkasCounter << 1 & 0x7e) | (request & 0x1);
-    LKAS_MSG[1] = cmd >> 8 & 0xFF;
-    LKAS_MSG[2] = cmd & 0xFF;
-    writeMsg(0x2e4, LKAS_MSG, 5, true);
-    lkasCounter = (lkasCounter + 1) % 64;
 
     //0x1d2 msg PCM_CRUISE
     PCM_CRUISE_MSG[0] = (openEnabled << 5) & 0x20;
@@ -153,7 +124,6 @@ void loop() {
 
     //0x1d3 msg PCM_CRUISE_2
     PCM_CRUISE_2_MSG[1] = (openEnabled << 7) & 0x80 | 0x28;
-    PCM_CRUISE_2_MSG[2] = setSpeed;
     writeMsg(0x1d3, PCM_CRUISE_2_MSG, 8, true);
 
     // 0x3bc msg GEAR_PACKET
@@ -163,5 +133,8 @@ void loop() {
     STEERING_LEVER_MSG[3] = (blinker_left << 5) & 0x20 | (blinker_right << 4) & 0x10;
     writeMsg(0x614, STEERING_LEVER_MSG, 8, true);
 
+    writeMsg(0x400, CAMERA, 8, false);
+
     delay(8);
+    
 }
