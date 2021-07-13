@@ -12,7 +12,7 @@ bool stateChanged = false;
 
 // Const Messages
 const uint8_t LEAD_INFO_MSG[8] = {0xff, 0xf8, 0x00, 0x08, 0x7f, 0xe0, 0x00, 0x4e};
-const uint8_t GEAR_MSG[8] = {0x0, 0x1, 0x0, 0x0, 0x0, 0x80, 0x0, 0x0};
+const uint8_t GEAR_MSG[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 const uint8_t PRE_COL[7] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8c};
 const uint8_t PRE_COL_2[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x4f};
 const uint8_t BRAKE_MOD[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8};
@@ -79,6 +79,8 @@ void recv(uint8_t packetSize) {
     } else if (id == 0x399) {
         CAN.read();
         openEnabled = (CAN.read() & 0x2) == 2;
+    } else if (id == 740 || id == 0x2e4) {
+        Serial.println("YES");
     }
 }
 
@@ -129,23 +131,10 @@ void setup() {
 }
 
 void loop() {
-
-    // Media Button Handling
-//    bool buttonPressed = digitalRead(8) == 0;
-//    if (buttonPressed) {
-//        if (lastState != buttonPressed) {
-//            if (!stateChanged) {
-//                openEnabled = !openEnabled;
-//            }
-//            stateChanged = true;
-//        } else {
-//            stateChanged = false;
-//        }
-//    }
-//    lastState = buttonPressed;
+    openEnabled = false;
 
     //0x2e6 LEAD_INFO
-    writeMsg(0x2e6, LEAD_INFO_MSG, 8, false);
+//    writeMsg(0x2e6, LEAD_INFO_MSG, 8, false);
     
     //0xaa WHEEL_SPEED
     writeMsg(0xaa, WHEEL_SPEEDS, 8, false);
@@ -165,6 +154,9 @@ void loop() {
     //0x614 msg steering_levers
     STEERING_LEVER_MSG[3] = (blinker_left << 5) & 0x20 | (blinker_right << 4) & 0x10;
     writeMsg(0x614, STEERING_LEVER_MSG, 8, true);
+
+//    uint8_t lkas[5] = {0xf9, 0x01, 0x04, 0x00, 0xe9};
+//    writeMsg(0x2e4, lkas, 5, false);
 
 //    writeMsg(0x400, CAMERA, 8, false);
 
