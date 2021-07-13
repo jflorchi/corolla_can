@@ -166,7 +166,7 @@ void loop() {
     STEERING_LEVER_MSG[3] = (blinker_left << 5) & 0x20 | (blinker_right << 4) & 0x10;
     writeMsg(0x614, STEERING_LEVER_MSG, 8, true);
 
-    writeMsg(0x400, CAMERA, 8, false);
+//    writeMsg(0x400, CAMERA, 8, false);
 
     writeMsg(0x130, MSG1, 7, false);
     writeMsg(0x240, MSG2, 7, false);
@@ -182,15 +182,15 @@ void loop() {
     writeMsg(0x48b, MSG12, 8, false);
     writeMsg(0x4d3, MSG13, 8, false);
 
-    writeMsg(0x3b1, MSG14, 8, false);
+//    writeMsg(0x3b1, MSG14, 8, false);
     writeMsg(0x1c4, MSG15, 8, false);
-    writeMsg(0x2c1, MSG16, 8, false);
+//    writeMsg(0x2c1, MSG16, 8, false);
     writeMsg(0x3d3, MSG17, 2, false);
-    writeMsg(0x399, MSG18, 8, false);
+//    writeMsg(0x399, MSG18, 8, false);
     writeMsg(0x3bb, MSG19, 4, false);
     writeMsg(0x3f9, MSG20, 8, false);
-    writeMsg(0x3bc, MSG21, 8, false);
-    writeMsg(0x24, MSG22, 8, false);
+//    writeMsg(0x3bc, MSG21, 8, false);
+//    writeMsg(0x24, MSG22, 8, false);
     writeMsg(0x3b1, MSG23, 8, false);
     writeMsg(0x4ac, MSG24, 8, false);
 
