@@ -150,7 +150,7 @@ void loop() {
     }
     
     // 100 Hz:
-    if (counter % 10 == 0) {
+    if (counter == 0 || counter % 10 == 0) {
         writeMsg(0xaa, WHEEL_SPEEDS, 8, false);
         writeMsg(0x130, MSG1, 7, false);
         writeMsg(0x414, MSG8, 7, false);
@@ -169,7 +169,7 @@ void loop() {
     }
     
     // 50 Hz:
-    if (counter % 20 == 0) {
+    if (counter == 0 || counter % 20 == 0) {
         writeMsg(0x3d3, MSG17, 2, false);
         writeMsg(0x4ac, MSG24, 8, false);
 //        writeMsg(0x24, MSG22, 8, false);
@@ -181,25 +181,25 @@ void loop() {
     }
     
     // 40 Hz:
-    if (counter % 25 == 0) {
+    if (counter == 0 || counter % 25 == 0) {
         writeMsg(0x367, MSG7, 2, false);
     }
     
     // 20 Hz:
-    if (counter % 50 == 0) {
+    if (counter == 0 || counter % 50 == 0) {
         writeMsg(0x3f9, MSG20, 8, false);
         writeMsg(0x365, MSG31, 7, false);
         writeMsg(0x366, MSG32, 7, false);
     }
     
     // 7 Hz
-    if (counter % 142 == 0) {
+    if (counter == 0 || counter % 142 == 0) {
         writeMsg(0x160, MSG27, 8, false);
         writeMsg(0x161, MSG28, 7, false);
     }
     
     // 5 Hz
-    if (counter % 200 == 0) {
+    if (counter == 0 || counter % 200 == 0) {
         writeMsg(0x240, MSG2, 7, false);
         writeMsg(0x241, MSG3, 7, false);
         writeMsg(0x244, MSG4, 7, false);
@@ -209,7 +209,7 @@ void loop() {
     }
     
     // 3 Hz:
-    if (counter % 333 == 0) {
+    if (counter == 0 || counter % 333 == 0) {
         writeMsg(0x128, MSG25, 6, false);
         writeMsg(0x283, MSG29, 7, false);
 
@@ -222,7 +222,7 @@ void loop() {
     }
     
     // 2 Hz:    
-    if (counter % 500 == 0) {
+    if (counter == 0 || counter % 500 == 0) {
         writeMsg(0x1c4, MSG15, 8, false);
         writeMsg(0x141, MSG26, 4, false);
     }
