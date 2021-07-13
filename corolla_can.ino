@@ -11,8 +11,7 @@ bool lastState = false;
 bool stateChanged = false;
 
 // Const Messages
-const uint8_t LEAD_INFO_MSG[8] = {0xff, 0xf8, 0x00, 0x08, 0x7f, 0xe0, 0x00, 0x4e};
-const uint8_t GEAR_MSG[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
+const uint8_t GEAR_MSG[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x80, 0x0, 0x0};
 const uint8_t PRE_COL[7] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8c};
 const uint8_t PRE_COL_2[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x4f};
 const uint8_t BRAKE_MOD[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8};
@@ -25,6 +24,8 @@ const uint8_t MSG3[7] = {0x00, 0x10, 0x01, 0x00, 0x10, 0x01, 0x00};
 const uint8_t MSG4[7] = {0x00, 0x10, 0x01, 0x00, 0x10, 0x01, 0x00};
 const uint8_t MSG5[7] = {0x00, 0x10, 0x01, 0x00, 0x10, 0x01, 0x00};
 const uint8_t MSG6[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+const uint8_t MSG7[2] = {0x06, 0x00};
+const uint8_t MSG7[2] = {0x06, 0x00};
 const uint8_t MSG7[2] = {0x06, 0x00};
 const uint8_t MSG8[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x00};
 const uint8_t MSG9[3] = {0x24, 0x20, 0xB1};
@@ -54,10 +55,20 @@ const uint8_t MSG32[7] = {0x00, 0x72, 0x07, 0xff, 0x09, 0xfe, 0x00};
 const uint8_t MSG33[8] = {0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 // Variable Messasges
+uint8_t LKAS_MSG[5] = {0x0, 0x0, 0x0, 0x0, 0x0};
 uint8_t PCM_CRUISE_MSG[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 uint8_t PCM_CRUISE_2_MSG[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 uint8_t STEERING_LEVER_MSG[8] = {0x29, 0x0, 0x01, 0x0, 0x0, 0x0, 0x76};
 uint8_t WHEEL_SPEEDS[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
+
+/**
+	Look at and compare to an actual 2017 to see if there are any differences
+		0x3b1
+		0x2c1
+		0x399
+		0x3bc
+		0x24
+*/
 
 /**
     #onReceive
@@ -130,73 +141,102 @@ void setup() {
     pinMode(8, INPUT_PULLUP);
 }
 
+uint8_t lkasCounter = 0;
+uint16_t counter = 0;
+
 void loop() {
-    openEnabled = false;
+	if (counter == 1001) {
+		counter = 0;
+	}
+	
+	// 100 Hz:
+	if (counter % 10 == 0) {
+		writeMsg(0xaa, WHEEL_SPEEDS, 8, false);
+		writeMsg(0x130, MSG1, 7, false);
+		writeMsg(0x414, MSG8, 7, false);
+		writeMsg(0x466, MSG9, 3, false);
+		writeMsg(0x489, MSG10, 7, false);
+		writeMsg(0x48a, MSG11, 7, false);
+		writeMsg(0x48b, MSG12, 8, false);
+		writeMsg(0x4d3, MSG13, 8, false);
+		writeMsg(0x3bc, GEAR_MSG, 8, false);
 
-    //0x2e6 LEAD_INFO
-//    writeMsg(0x2e6, LEAD_INFO_MSG, 8, false);
-    
-    //0xaa WHEEL_SPEED
-    writeMsg(0xaa, WHEEL_SPEEDS, 8, false);
+		writeMsg(0x3bb, MSG19, 4, false);
+		writeMsg(0x3b1, MSG23, 8, false);
+		writeMsg(0x4cb, MSG33, 8, false);
+//    	  writeMsg(0x3bc, MSG21, 8, false);
+//    	  writeMsg(0x399, MSG18, 8, false);
+	}
+	
+	// 50 Hz:
+	if (counter % 20 == 0) {
+		writeMsg(0x3d3, MSG17, 2, false);
+		writeMsg(0x4ac, MSG24, 8, false);
+//    	  writeMsg(0x24, MSG22, 8, false);
+		if (!openEnabled) {
+			LKAS_MSG[0] = ((LKAS_MSG[0] |= 1UL << 0) & ~0x7F) | (lkasCounter * 0x7F);
+			writeMsg(0x2e4, LKAS_MSG, 5, true);
+			lkasCounter = (lkasCounter + 1) % 64;
+		} else {
+			uint8_t lkas[5] = {0xf9, 0x01, 0x04, 0x00, 0xe9};
+			writeMsg(0x2e4, lkas, 5, false);
+		}
+	}
+	
+	// 40 Hz:
+	if (counter % 25 == 0) {
+		writeMsg(0x367, MSG7, 2, false);
+	}
+	
+	// 20 Hz:
+	if (counter % 50 == 0) {
+		writeMsg(0x3f9, MSG20, 8, false);
+		writeMsg(0x365, MSG31, 7, false);
+		writeMsg(0x366, MSG32, 7, false);
+	}
+	
+	// 7 Hz
+	if (counter % 142 == 0) {
+		writeMsg(0x160, MSG27, 8, false);
+		writeMsg(0x161, MSG28, 7, false);
+	}
+	
+	// 5 Hz
+	if (counter % 200 == 0) {
+		writeMsg(0x240, MSG2, 7, false);
+		writeMsg(0x241, MSG3, 7, false);
+		writeMsg(0x244, MSG4, 7, false);
+		writeMsg(0x245, MSG5, 7, false);
+		writeMsg(0x248, MSG6, 7, false);
+		writeMsg(0x344, MSG30, 8, false);
+	}
+	
+	// 3 Hz:
+	if (counter % 333 == 0) {
+		writeMsg(0x128, MSG25, 6, false);
+		writeMsg(0x283, MSG29, 7, false);
 
-    //0x1d2 msg PCM_CRUISE
-    PCM_CRUISE_MSG[0] = (openEnabled << 5) & 0x20;
-    PCM_CRUISE_MSG[5] = (openEnabled << 7) & 0x80;
-    writeMsg(0x1d2, PCM_CRUISE_MSG, 8, true);
+		PCM_CRUISE_MSG[0] = (openEnabled << 5) & 0x20;
+		PCM_CRUISE_MSG[5] = (openEnabled << 7) & 0x80;
+		writeMsg(0x1d2, PCM_CRUISE_MSG, 8, true);
+		
+		PCM_CRUISE_2_MSG[1] = (openEnabled << 7) & 0x80 | 0x28;
+		writeMsg(0x1d3, PCM_CRUISE_2_MSG, 8, true);
+	}
+	
+	// 2 Hz:	
+	if (counter % 500 == 0) {
+		writeMsg(0x1c4, MSG15, 8, false);
+		writeMsg(0x141, MSG26, 4, false);
+	}
+	
+	// 1 Hz:
+	if (counter == 0) {
+//     	  writeMsg(0x3b1, MSG14, 8, false);
+		STEERING_LEVER_MSG[3] = (blinker_left << 5) & 0x20 | (blinker_right << 4) & 0x10;
+		writeMsg(0x614, STEERING_LEVER_MSG, 8, true);
+	}
 
-    //0x1d3 msg PCM_CRUISE_2
-    PCM_CRUISE_2_MSG[1] = (openEnabled << 7) & 0x80 | 0x28;
-    writeMsg(0x1d3, PCM_CRUISE_2_MSG, 8, true);
-
-    // 0x3bc msg GEAR_PACKET
-    writeMsg(0x3bc, GEAR_MSG, 8, false);
-
-    //0x614 msg steering_levers
-    STEERING_LEVER_MSG[3] = (blinker_left << 5) & 0x20 | (blinker_right << 4) & 0x10;
-    writeMsg(0x614, STEERING_LEVER_MSG, 8, true);
-
-//    uint8_t lkas[5] = {0xf9, 0x01, 0x04, 0x00, 0xe9};
-//    writeMsg(0x2e4, lkas, 5, false);
-
-//    writeMsg(0x400, CAMERA, 8, false);
-
-    writeMsg(0x130, MSG1, 7, false);
-    writeMsg(0x240, MSG2, 7, false);
-    writeMsg(0x241, MSG3, 7, false);
-    writeMsg(0x244, MSG4, 7, false);
-    writeMsg(0x245, MSG5, 7, false);
-    writeMsg(0x248, MSG6, 7, false);
-    writeMsg(0x367, MSG7, 2, false);
-    writeMsg(0x414, MSG8, 7, false);
-    writeMsg(0x466, MSG9, 3, false);
-    writeMsg(0x489, MSG10, 7, false);
-    writeMsg(0x48a, MSG11, 7, false);
-    writeMsg(0x48b, MSG12, 8, false);
-    writeMsg(0x4d3, MSG13, 8, false);
-
-//    writeMsg(0x3b1, MSG14, 8, false);
-    writeMsg(0x1c4, MSG15, 8, false);
-//    writeMsg(0x2c1, MSG16, 8, false);
-    writeMsg(0x3d3, MSG17, 2, false);
-//    writeMsg(0x399, MSG18, 8, false);
-    writeMsg(0x3bb, MSG19, 4, false);
-    writeMsg(0x3f9, MSG20, 8, false);
-//    writeMsg(0x3bc, MSG21, 8, false);
-//    writeMsg(0x24, MSG22, 8, false);
-    writeMsg(0x3b1, MSG23, 8, false);
-    writeMsg(0x4ac, MSG24, 8, false);
-
-    writeMsg(0x128, MSG25, 6, false);
-    writeMsg(0x141, MSG26, 4, false);
-    writeMsg(0x160, MSG27, 8, false);
-    writeMsg(0x161, MSG28, 7, false);
-    writeMsg(0x283, MSG29, 7, false);
-
-    writeMsg(0x344, MSG30, 8, false);
-    writeMsg(0x365, MSG31, 7, false);
-    writeMsg(0x366, MSG32, 7, false);
-    writeMsg(0x4cb, MSG33, 8, false);
-
-    delay(8);
-    
+    delay(1);
+    counter++;
 }
