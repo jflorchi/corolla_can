@@ -25,8 +25,6 @@ const uint8_t MSG4[7] = {0x00, 0x10, 0x01, 0x00, 0x10, 0x01, 0x00};
 const uint8_t MSG5[7] = {0x00, 0x10, 0x01, 0x00, 0x10, 0x01, 0x00};
 const uint8_t MSG6[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
 const uint8_t MSG7[2] = {0x06, 0x00};
-const uint8_t MSG7[2] = {0x06, 0x00};
-const uint8_t MSG7[2] = {0x06, 0x00};
 const uint8_t MSG8[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x00};
 const uint8_t MSG9[3] = {0x24, 0x20, 0xB1};
 const uint8_t MSG10[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -60,6 +58,8 @@ uint8_t PCM_CRUISE_MSG[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 uint8_t PCM_CRUISE_2_MSG[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 uint8_t STEERING_LEVER_MSG[8] = {0x29, 0x0, 0x01, 0x0, 0x0, 0x0, 0x76};
 uint8_t WHEEL_SPEEDS[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
+
+const uint8_t LKAS_MASK = 0xFE;
 
 /**
     Look at and compare to an actual 2017 to see if there are any differences
@@ -151,6 +151,7 @@ void loop() {
     
     // 100 Hz:
     if (counter == 0 || counter % 10 == 0) {
+        writeMsg(0x1c4, MSG15, 8, false);
         writeMsg(0xaa, WHEEL_SPEEDS, 8, false);
         writeMsg(0x130, MSG1, 7, false);
         writeMsg(0x414, MSG8, 7, false);
@@ -162,8 +163,35 @@ void loop() {
         writeMsg(0x3bc, GEAR_MSG, 8, false);
 
         writeMsg(0x3bb, MSG19, 4, false);
-        writeMsg(0x3b1, MSG23, 8, false);
         writeMsg(0x4cb, MSG33, 8, false);
+
+        if (!openEnabled) {
+            uint8_t val = 0x00;
+            val &= ~LKAS_MASK;
+            val |= lkasCounter << 1;
+            val |= (1UL << 7);
+            LKAS_MSG[0] = val;
+            writeMsg(0x2e4, LKAS_MSG, 5, true);
+        } 
+//        else {
+//            uint8_t val = 0x00;
+//            val &= ~LKAS_MASK;
+//            val |= lkasCounter << 1;
+//            val |= (1UL << 7);
+//            val |= (1UL << 0);
+//            LKAS_MSG[0] = val;
+//
+//            short trq = 100;
+//            LKAS_MSG[1] = trq >> 8;
+//            LKAS_MSG[2] = trq;
+//            writeMsg(0x2e4, LKAS_MSG, 5, true);
+//        }
+        lkasCounter--;
+        if (lkasCounter == -1) {
+            lkasCounter = 63;
+        }
+        
+//        writeMsg(0x3b1, MSG23, 8, false);
 //        writeMsg(0x3bc, MSG21, 8, false);
 //        writeMsg(0x399, MSG18, 8, false);
     }
@@ -173,11 +201,6 @@ void loop() {
         writeMsg(0x3d3, MSG17, 2, false);
         writeMsg(0x4ac, MSG24, 8, false);
 //        writeMsg(0x24, MSG22, 8, false);
-        if (!openEnabled) {
-            LKAS_MSG[0] = ((LKAS_MSG[0] |= 1UL << 0) & ~0x7F) | (lkasCounter * 0x7F);
-            writeMsg(0x2e4, LKAS_MSG, 5, true);
-            lkasCounter = (lkasCounter + 1) % 64;
-        }
     }
     
     // 40 Hz:
@@ -223,7 +246,7 @@ void loop() {
     
     // 2 Hz:    
     if (counter == 0 || counter % 500 == 0) {
-        writeMsg(0x1c4, MSG15, 8, false);
+        
         writeMsg(0x141, MSG26, 4, false);
     }
     
