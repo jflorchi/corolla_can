@@ -59,15 +59,26 @@ uint8_t PCM_CRUISE_2_MSG[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 uint8_t STEERING_LEVER_MSG[8] = {0x29, 0x0, 0x01, 0x0, 0x0, 0x0, 0x76};
 uint8_t WHEEL_SPEEDS[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 
+uint8_t ANGLE[8] = {0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x78, 0x00};
+
 const uint8_t LKAS_MASK = 0xFE;
+
+uint16_t histAngle[5] = {0x0, 0x0, 0x0, 0x0, 0x0};
+uint16_t histTime[5] = {0x0, 0x0, 0x0, 0x0, 0x0};
+uint8_t caret = 0;
+unsigned long lastTime = 0;
 
 /**
     Look at and compare to an actual 2017 to see if there are any differences
         0x3b1
         0x2c1
         0x399
-        0x3bc
         0x24
+        else {
+            writeMsg(0x3b1, MSG23, 8, false);
+            writeMsg(0x399, MSG18, 8, false);
+            writeMsg(0x24, MSG22, 8, false);  
+        }
 */
 
 /**
@@ -90,9 +101,30 @@ void recv(uint8_t packetSize) {
     } else if (id == 0x399) {
         CAN.read();
         openEnabled = (CAN.read() & 0x2) == 2;
-    } else if (id == 740 || id == 0x2e4) {
-        Serial.println("YES");
+    } else if (id == 0x25) {
+        ANGLE[0] = CAN.read();
+        ANGLE[1] = CAN.read();
+//        uint8_t shotAngle = (ANGLE[0] & 0x0F) << 8;
+//        shotAngle |= ANGLE[1];
+//
+//        currentTime = millis();
+//        histAngle[caret] = shotAngle;
+//        unsigned long elapsed = currentTime - lastTime;
+//        float seconds = elapsed / 1000;
+//        histTime[caret] = seconds;
+//
+//        lastTime = currentTime;
     }
+}
+
+float getCurrentSteeringRate() {
+    uint16_t angleSum = 0;
+    uint16_t timeSum = 0;
+    for (uint8_t i = 0; i < 5; i++) {
+        angleSum += histAngle[i];
+        timeSum += histTime[i];
+    }
+    return (float) (angleSum / timeSum);
 }
 
 /**
@@ -134,7 +166,7 @@ void setup() {
     Serial.begin(9600);
     Serial.println("init");
 
-    CAN.setPins(9, 2);
+    CAN.setPins(10, 2);
     CAN.begin(500E3);
     CAN.onReceive(recv);
 
@@ -147,6 +179,14 @@ uint16_t counter = 0;
 void loop() {
     if (counter == 1001) {
         counter = 0;
+    }
+
+//    openEnabled = true;
+
+//    writeMsg(0x25, ANGLE, 8, true);
+    if (openEnabled && (counter == 0 || counter % 6 == 0)) {
+        writeMsg(0x25, ANGLE, 8, true);
+        Serial.println(ANGLE[1]);
     }
     
     // 100 Hz:
@@ -165,42 +205,27 @@ void loop() {
         writeMsg(0x3bb, MSG19, 4, false);
         writeMsg(0x4cb, MSG33, 8, false);
 
-        if (!openEnabled) {
-            uint8_t val = 0x00;
-            val &= ~LKAS_MASK;
-            val |= lkasCounter << 1;
-            val |= (1UL << 7);
-            LKAS_MSG[0] = val;
-            writeMsg(0x2e4, LKAS_MSG, 5, true);
-        } 
-//        else {
+//         if (!openEnabled) {
 //            uint8_t val = 0x00;
 //            val &= ~LKAS_MASK;
 //            val |= lkasCounter << 1;
 //            val |= (1UL << 7);
-//            val |= (1UL << 0);
 //            LKAS_MSG[0] = val;
-//
-//            short trq = 100;
-//            LKAS_MSG[1] = trq >> 8;
-//            LKAS_MSG[2] = trq;
 //            writeMsg(0x2e4, LKAS_MSG, 5, true);
 //        }
-        lkasCounter--;
-        if (lkasCounter == -1) {
-            lkasCounter = 63;
-        }
+//        lkasCounter--;
+//        if (lkasCounter == -1) {
+//            lkasCounter = 63;
+//        }
+
         
-//        writeMsg(0x3b1, MSG23, 8, false);
-//        writeMsg(0x3bc, MSG21, 8, false);
-//        writeMsg(0x399, MSG18, 8, false);
     }
     
     // 50 Hz:
     if (counter == 0 || counter % 20 == 0) {
         writeMsg(0x3d3, MSG17, 2, false);
         writeMsg(0x4ac, MSG24, 8, false);
-//        writeMsg(0x24, MSG22, 8, false);
+
     }
     
     // 40 Hz:
@@ -246,13 +271,11 @@ void loop() {
     
     // 2 Hz:    
     if (counter == 0 || counter % 500 == 0) {
-        
         writeMsg(0x141, MSG26, 4, false);
     }
     
     // 1 Hz:
     if (counter == 0) {
-//        writeMsg(0x3b1, MSG14, 8, false);
         STEERING_LEVER_MSG[3] = (blinker_left << 5) & 0x20 | (blinker_right << 4) & 0x10;
         writeMsg(0x614, STEERING_LEVER_MSG, 8, true);
     }
